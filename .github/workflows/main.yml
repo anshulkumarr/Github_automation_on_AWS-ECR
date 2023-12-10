@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - name: Checkout repository
@@ -21,19 +21,24 @@ jobs:
 
     - name: Login to AWS ECR
       run: |
-        aws ecr get-login-password --region "${{ secrets.AWS_REGION }}" | docker login --username AWS --password-stdin "${{ secrets.AWS_ECR_REGISTRY_URI }}"
+        $env:AWS_ACCOUNT_ID=$env:AWS_ACCOUNT_ID
+        $env:AWS_REGION=$env:AWS_REGION
+
+        $password = (aws ecr get-login-password --region $env:AWS_REGION)
+        docker login -u AWS -p $password $env:AWS_ECR_REGISTRY_URI
 
     - name: Build and push Docker image
       run: |
         docker buildx create --use
         docker buildx inspect --bootstrap
 
-        docker buildx build --platform linux/amd64,linux/arm64 -t "${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER" -t "${{ secrets.AWS_ECR_REGISTRY_URI }}:latest" -f Dockerfile .
-        docker tag "${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER" "${{ secrets.AWS_ECR_REGISTRY_URI }}:latest"
+        docker buildx build --platform windows/amd64,linux/amd64,linux/arm64 -t $env:AWS_ECR_REGISTRY_URI:$GITHUB_RUN_NUMBER -t $env:AWS_ECR_REGISTRY_URI:latest -f Dockerfile .
+        docker tag $env:AWS_ECR_REGISTRY_URI:$GITHUB_RUN_NUMBER $env:AWS_ECR_REGISTRY_URI:latest
 
-        docker push "${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER"
-        docker push "${{ secrets.AWS_ECR_REGISTRY_URI }}:latest"
+        docker push $env:AWS_ECR_REGISTRY_URI:$GITHUB_RUN_NUMBER
+        docker push $env:AWS_ECR_REGISTRY_URI:latest
 
       env:
         AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
         AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_ECR_REGISTRY_URI: ${{ secrets.AWS_ECR_REGISTRY_URI }}
