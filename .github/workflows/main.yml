@@ -19,16 +19,9 @@ jobs:
     - name: Set up Docker
       uses: docker/setup-buildx-action@v1
 
-    - name: Get AWS ECR credentials
-      id: ecr-login
-      run: |
-        echo "::set-output name=AWS_ACCESS_KEY_ID::$(curl -s 169.254.170.2$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r .AccessKeyId)"
-        echo "::set-output name=AWS_SECRET_ACCESS_KEY::$(curl -s 169.254.170.2$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r .SecretAccessKey)"
-        echo "::set-output name=AWS_SESSION_TOKEN::$(curl -s 169.254.170.2$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r .Token)"
-
     - name: Login to AWS ECR
       run: |
-        docker login -u AWS -p "${{ secrets.AWS_SESSION_TOKEN }}" "${{ secrets.AWS_ECR_REGISTRY_URI }}"
+        docker login -u AWS -p "${{ secrets.AWS_SECRET_ACCESS_KEY }}" -e none "${{ secrets.AWS_ECR_REGISTRY_URI }}"
 
     - name: Build and push Docker image
       run: |
