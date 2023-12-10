@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - name: Checkout Repository
@@ -21,14 +21,13 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        # Your Docker build and push commands here
-        set -x
         docker build -t ${{ secrets.AWS_ECR_REPO_URL }} .
         docker tag ${{ secrets.AWS_ECR_REPO_URL }}:latest ${{ secrets.AWS_ECR_REPO_URL }}:${{ github.sha }}
-        echo ${{ secrets.AWS_ACCESS_KEY_ID }} | docker login -u AWS --password-stdin ${{ secrets.AWS_REGISTRY }}
+        $password = ConvertTo-SecureString -String $env:AWS_ACCESS_KEY_ID -AsPlainText -Force
+        docker login -u AWS -p $password ${{ secrets.AWS_REGISTRY }}
         docker push ${{ secrets.AWS_ECR_REPO_URL }}
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGISTRY: ${{ secrets.AWS_REGISTRY }}
+        AWS_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
         AWS_ECR_REPO_URL: ${{ secrets.AWS_ECR_REPO_URL }}
