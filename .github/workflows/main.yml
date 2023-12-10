@@ -24,7 +24,7 @@ jobs:
         # Your Docker build and push commands here
         set -x
         docker build -t ${{ secrets.AWS_ECR_REPO_URL }} .
-        docker tag ${{ secrets.AWS_ECR_REPO_URL }}:latest ${{ secrets.AWS_ECR_REPO_URL }}:${{ github.sha }}
+        docker tag ${{ secrets.AWS_ECR_REPO_URL }}:1.1 ${{ secrets.AWS_ECR_REPO_URL }}:${{ github.sha }}
         echo ${{ secrets.AWS_ACCESS_KEY_ID }} | docker login -u AWS --password-stdin ${{ secrets.AWS_REGISTRY }}
         docker push ${{ secrets.AWS_ECR_REPO_URL }}
       env:
