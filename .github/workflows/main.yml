@@ -23,7 +23,6 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y awscli
-
     - name: Set AWS Credentials and Region
       run: |
         mkdir -p ~/.aws
@@ -32,23 +31,22 @@ jobs:
         echo "aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
         echo "[default]" > ~/.aws/config
         echo "region=${{ secrets.AWS_REGION }}" >> ~/.aws/config
-
     - name: Debug AWS CLI Configuration
       run: aws configure list
 
     - name: Login to AWS ECR
       run: |
         aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login -u AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY_URI }}
-
     - name: Build and push Docker image
       run: |
         docker buildx create --use
         docker buildx inspect --bootstrap
-
-        # Use a fixed tag and append the GitHub run number
-        DOCKER_TAG="27-${GITHUB_RUN_NUMBER}"
-        docker buildx build --platform linux/amd64 -t ${{ secrets.AWS_ECR_REGISTRY_URI }}:${DOCKER_TAG} -t ${{ secrets.AWS_ECR_REGISTRY_URI }}:latest --push -f Dockerfile .
-        docker tag ${{ secrets.AWS_ECR_REGISTRY_URI }}:${DOCKER_TAG} ${{ secrets.AWS_ECR_REGISTRY_URI }}:latest
+        docker buildx build --platform linux/amd64 -t ${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER -t ${{ secrets.AWS_ECR_REGISTRY_URI }}:latest --push -f Dockerfile .
+        docker tag ${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER ${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER
+        docker tag ${{ secrets.AWS_ECR_REGISTRY_URI }}:latest ${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER
+        docker push ${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER
+        docker push ${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER
+        docker push ${{ secrets.AWS_ECR_REGISTRY_URI }}:latest
       env:
         AWS_REGION: ${{ secrets.AWS_REGION }}
         AWS_ECR_REGISTRY_URI: ${{ secrets.AWS_ECR_REGISTRY_URI }}
