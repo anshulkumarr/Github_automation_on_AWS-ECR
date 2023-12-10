@@ -42,7 +42,7 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        TAG="n"  # You can set your desired tag here
+        TAG="1"  # You can set your desired tag here
         docker buildx create --use
         docker buildx inspect --bootstrap
         docker buildx build --platform linux/amd64 -t ${{ secrets.AWS_ECR_REGISTRY_URI }}:$TAG --push -f Dockerfile .
