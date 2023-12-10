@@ -13,21 +13,31 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout Repository
+    - name: Checkout repository
       uses: actions/checkout@v2
 
     - name: Set up Docker
       uses: docker/setup-buildx-action@v1
 
-    - name: Build and Push Docker Image
+    - name: Build and push Docker image
       run: |
-        docker build -t ${{ secrets.AWS_ECR_REPO_URL }} .
-        docker tag ${{ secrets.AWS_ECR_REPO_URL }}:latest ${{ secrets.AWS_ECR_REPO_URL }}:${{ github.sha }}
-        $password = ConvertTo-SecureString -String $env:AWS_ACCESS_KEY_ID -AsPlainText -Force
-        docker login -u AWS -p $password ${{ secrets.AWS_REGISTRY }}
-        docker push ${{ secrets.AWS_ECR_REPO_URL }}
+        $env:AWS_ACCOUNT_ID=$env:AWS_ACCOUNT_ID
+        $env:AWS_REGION=$env:AWS_REGION
+        $env:AWS_ACCESS_KEY_ID=$env:AWS_ACCESS_KEY_ID
+        $env:AWS_SECRET_ACCESS_KEY=$env:AWS_SECRET_ACCESS_KEY
+
+        docker buildx create --use
+        docker buildx inspect --bootstrap
+
+        docker buildx build --platform linux/amd64,linux/arm64 -t ${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER -t ${{ secrets.AWS_ECR_REGISTRY_URI }}:latest -f Dockerfile .
+        docker tag ${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER ${{ secrets.AWS_ECR_REGISTRY_URI }}:latest
+
+        echo $AWS_ACCESS_KEY_ID | docker login -u AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY_URI }}
+        docker push ${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER
+        docker push ${{ secrets.AWS_ECR_REGISTRY_URI }}:latest
+
       env:
+        AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        AWS_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-        AWS_ECR_REPO_URL: ${{ secrets.AWS_ECR_REPO_URL }}
