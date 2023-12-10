@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-and-push:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
@@ -19,20 +19,17 @@ jobs:
     - name: Set up Docker
       uses: docker/setup-buildx-action@v1
 
+    - name: Login to AWS ECR
+      run: echo $AWS_ACCESS_KEY_ID | docker login -u AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY_URI }}
+
     - name: Build and push Docker image
       run: |
-        $env:AWS_ACCOUNT_ID=$env:AWS_ACCOUNT_ID
-        $env:AWS_REGION=$env:AWS_REGION
-        $env:AWS_ACCESS_KEY_ID=$env:AWS_ACCESS_KEY_ID
-        $env:AWS_SECRET_ACCESS_KEY=$env:AWS_SECRET_ACCESS_KEY
-
         docker buildx create --use
         docker buildx inspect --bootstrap
 
         docker buildx build --platform linux/amd64,linux/arm64 -t ${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER -t ${{ secrets.AWS_ECR_REGISTRY_URI }}:latest -f Dockerfile .
         docker tag ${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER ${{ secrets.AWS_ECR_REGISTRY_URI }}:latest
 
-        echo $AWS_ACCESS_KEY_ID | docker login -u AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY_URI }}
         docker push ${{ secrets.AWS_ECR_REGISTRY_URI }}:$GITHUB_RUN_NUMBER
         docker push ${{ secrets.AWS_ECR_REGISTRY_URI }}:latest
 
